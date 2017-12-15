@@ -151,10 +151,9 @@ func sendMetrics(config map[string]ctypes.ConfigValue, promUrl *url.URL, client 
 	buf := new(bytes.Buffer)
 	for _, m := range metrics {
 		name, tags, value, ts := mangleMetric(m)
-		buf.WriteString(prometheusString(name, tags, value, ts))
+		buf.WriteString(prometheusString(name, tags, value))
 		buf.WriteByte('\n')
 	}
-
 	req, err := http.NewRequest("PUT", promUrl.String(), bytes.NewReader(buf.Bytes()))
 	req.Header.Set("Content-Type", "text/plain; version=0.0.4")
 	res, err := client.Conn.Do(req)
@@ -169,16 +168,15 @@ func sendMetrics(config map[string]ctypes.ConfigValue, promUrl *url.URL, client 
 	}
 }
 
-func prometheusString(name string, tags map[string]string, value string, ts int64) string {
+func prometheusString(name string, tags map[string]string, value string) string {
 	tmp1 := []string{}
 	for k, v := range tags {
 		tmp1 = append(tmp1, fmt.Sprintf("%s=\"%s\"", k, v))
 	}
-	return fmt.Sprintf("%s{%s} %s %d",
+	return fmt.Sprintf("%s{%s} %s",
 		name,
 		strings.Join(tmp1, ","),
 		value,
-		ts,
 	)
 }
 
