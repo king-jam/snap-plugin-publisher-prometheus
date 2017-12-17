@@ -150,7 +150,7 @@ func sendMetrics(config map[string]ctypes.ConfigValue, promUrl *url.URL, client 
 	logger := getLogger(config)
 	buf := new(bytes.Buffer)
 	for _, m := range metrics {
-		name, tags, value, ts := mangleMetric(m)
+		name, tags, value := mangleMetric(m)
 		buf.WriteString(prometheusString(name, tags, value))
 		buf.WriteByte('\n')
 	}
@@ -180,7 +180,7 @@ func prometheusString(name string, tags map[string]string, value string) string 
 	)
 }
 
-func mangleMetric(m plugin.MetricType) (name string, tags map[string]string, value string, ts int64) {
+func mangleMetric(m plugin.MetricType) (name string, tags map[string]string, value string) {
 	tags = make(map[string]string)
 	ns := m.Namespace().Strings()
 	isDynamic, indexes := m.Namespace().IsDynamic()
@@ -225,7 +225,6 @@ func mangleMetric(m plugin.MetricType) (name string, tags map[string]string, val
 
 	name = strings.Join(ns, "_")
 	value = fmt.Sprint(m.Data())
-	ts = m.Timestamp().Unix() * 1000
 	return
 }
 
