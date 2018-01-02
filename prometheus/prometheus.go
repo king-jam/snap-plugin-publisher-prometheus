@@ -109,6 +109,13 @@ func (p *prometheusPublisher) GetConfigPolicy() (*cpolicy.ConfigPolicy, error) {
 	r4.Description = "Prometheus debug"
 	config.Add(r4)
 
+	r5, err := cpolicy.NewStringRule("jobName", false)
+	if err != nil {
+		panic(err)
+	}
+	r5.Description = "Prometheus Job Name - defaults to unused"
+	config.Add(r5)
+
 	cp.Add([]string{""}, config)
 	return cp, nil
 }
@@ -155,16 +162,20 @@ func sendMetrics(config map[string]ctypes.ConfigValue, promUrl *url.URL, client 
 		buf.WriteByte('\n')
 	}
 	req, err := http.NewRequest("PUT", promUrl.String(), bytes.NewReader(buf.Bytes()))
+	if err != nil {
+		logger.Errorf("Error creating request: %v", err)
+		return
+	}
 	req.Header.Set("Content-Type", "text/plain; version=0.0.4")
 	res, err := client.Conn.Do(req)
 	if err != nil {
-		logger.Error("Error sending data to Prometheus: %v", err)
+		logger.Errorf("Error sending data to Prometheus: %v", err)
 		return
 	}
 	defer res.Body.Close()
 	_, err = ioutil.ReadAll(res.Body)
 	if err != nil {
-		logger.Error("Error getting Prometheus response: %v", err)
+		logger.Errorf("Error getting Prometheus response: %v", err)
 	}
 }
 
@@ -233,8 +244,11 @@ func prometheusUrl(config map[string]ctypes.ConfigValue) (*url.URL, error) {
 	if config["https"].(ctypes.ConfigValueBool).Value {
 		prefix = "https"
 	}
-
-	u, err := url.Parse(fmt.Sprintf("%s://%s:%d/metrics/job/unused", prefix, config["host"].(ctypes.ConfigValueStr).Value, config["port"].(ctypes.ConfigValueInt).Value))
+	var jobName = "unused"
+	if _, ok := config["job"]; ok {
+		jobName = config["job"].(ctypes.ConfigValueStr).Value
+	}
+	u, err := url.Parse(fmt.Sprintf("%s://%s:%d/metrics/job/%s", prefix, config["host"].(ctypes.ConfigValueStr).Value, config["port"].(ctypes.ConfigValueInt).Value, jobName))
 	if err != nil {
 		return nil, err
 	}
