@@ -109,7 +109,7 @@ func (p *prometheusPublisher) GetConfigPolicy() (*cpolicy.ConfigPolicy, error) {
 	r4.Description = "Prometheus debug"
 	config.Add(r4)
 
-	r5, err := cpolicy.NewStringRule("jobName", false)
+	r5, err := cpolicy.NewStringRule("job", false)
 	if err != nil {
 		panic(err)
 	}
